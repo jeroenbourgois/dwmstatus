@@ -65,7 +65,7 @@ main(void)
   if(!status)
     return EXIT_FAILURE;
 
-  // processMouse(mfd, ie, dpy);
+  processMouse(mfd, ie, dpy);
 
   while(1)
   { 
