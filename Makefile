@@ -1,6 +1,6 @@
 CC=gcc
 EXT=.c
-LDFLAGS= -lX11 -lasound 
+LDFLAGS= -lX11 -lasound -lXi
 DEBUG_FLAGS= -DDEBUG=1 -W -Wall -ansi -pedantic -g
 FLAGS= -std=c99 -Wall
 
