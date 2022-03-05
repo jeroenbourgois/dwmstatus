@@ -23,6 +23,8 @@
 
 static void select_events(Display *display, Window win);
 static int has_xi2(Display *display);
+void setup();
+void setup_mouse();
 void run();
 void update_mouse();
 void update_status();
@@ -44,6 +46,7 @@ char *status;
 const char *BG_COLOR    = "#000000";
 const char *CLR_BLUE    = "#46d9ff";
 const char *CLR_YELLOW  = "#ecbe7b";
+const char *CLR_RED     = "#ff3024";
 char *disk_home_free;
 char *disk_sys_free;
 char *datetime;
@@ -105,12 +108,50 @@ char * get_mem_usage()
   char *buf;
   struct sysinfo si; 
   int error = sysinfo(&si);
-  buf = (char*) malloc(sizeof(char)*65);
+  buf = (char*) malloc(sizeof(char)*256);
   if(error == 0) {
-    const unsigned int GB = 1024 * 1024 * 1024;
-    const double used = (double)(si.totalram-si.freeram-(si.bufferram+si.sharedram))/GB; 
-    const char* color = "#ff00ff";
-    sprintf(buf, "^c%s^MEM %.1f GB", color, used);
+    unsigned int mem_unit;
+    // const unsigned int GB = 1024 * 1024 * 1024;
+    const unsigned int GB = 1024 * 1024;
+    const double used = (double)(si.totalram-si.freeram-(si.bufferram + si.sharedram))/GB; 
+    const unsigned long free = (si.freeram * si.mem_unit)/GB; 
+
+    mem_unit = 1;
+	if (si.mem_unit != 0) {
+		mem_unit = si.mem_unit;
+	}
+
+	/* Convert values to kbytes */
+	if (mem_unit == 1) {
+		si.totalram >>= 10;
+		si.freeram >>= 10;
+		si.sharedram >>= 10;
+		si.bufferram >>= 10;
+	} else {
+		mem_unit >>= 10;
+		/* TODO:  Make all this stuff not overflow when mem >= 4 Tb */
+		si.totalram *= mem_unit;
+		si.freeram *= mem_unit;
+		si.sharedram *= mem_unit;
+		si.bufferram *= mem_unit;
+	}
+
+		si.totalram /= GB;
+		si.freeram /= GB;
+		si.sharedram /= GB;
+		si.bufferram /= GB;
+
+    /* printf("Total Ram: %lluk\tFree: %lluk\n",
+                si.totalram *(unsigned long long)si.mem_unit / GB,
+                si.freeram *(unsigned long long)si.mem_unit/ GB); */
+	sprintf(buf, "%6s%13llu%13llu%13llu%13llu%13llu\n", "Mem:",
+		si.totalram,
+		si.totalram - si.freeram,
+		si.freeram,
+		si.sharedram, si.bufferram
+	);
+
+    // sprintf(buf, "^c%s^Mem free: %llu GB", CLR_RED, free);
   } else {
     buf = "";
   }
@@ -169,6 +210,19 @@ char * get_disk_usage(const char *path)
   return buf;
 }
 
+void setup_mouse()
+{
+  if (!XQueryExtension(display, "XInputExtension", &xi_opcode, &event, &error)) {
+    fprintf(stderr, "X Input extension not available.\n");
+    exit(EXIT_FAILURE);
+  }
+
+  if (!has_xi2(display)) exit(EXIT_FAILURE);
+
+  // select for XI2 events
+  select_events(display, DefaultRootWindow(display));
+}
+
 void setup() 
 {
   display = XOpenDisplay(NULL);
@@ -179,17 +233,9 @@ void setup()
     exit(EXIT_FAILURE);
   }
 
-  if (!XQueryExtension(display, "XInputExtension", &xi_opcode, &event, &error)) {
-    fprintf(stderr, "X Input extension not available.\n");
-    exit(EXIT_FAILURE);
-  }
+  // setup_mouse();
 
-  if (!has_xi2(display)) exit(EXIT_FAILURE);
-
-  // select for XI2 events
-  select_events(display, DefaultRootWindow(display));
-
-  time_t previousTime = time(NULL);
+  previousTime = time(0);
 
   status = (char*) malloc(sizeof(char)*MSIZE);
   if(!status)
@@ -201,7 +247,7 @@ void setup()
 void run() 
 {
   while(running) {
-    update_mouse();
+    // update_mouse();
     update_status();
   }
 }
@@ -264,8 +310,7 @@ void update_status()
         CLR_BLUE,
         datetime
       );
-    if(ret >= MSIZE)
-      fprintf(stderr, "error: buffer too small %d/%d\n", MSIZE, ret);
+
     set_status(display, window, status);
     previousTime += interval_status;
   }
