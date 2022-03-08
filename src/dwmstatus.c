@@ -108,11 +108,12 @@ char * get_mem_usage()
   char *buf;
   struct sysinfo si; 
   int error = sysinfo(&si);
+  double used_pct, free_pct;
+  char *clr;
   buf = (char*) malloc(sizeof(char)*256);
   if(error == 0) {
     unsigned int mem_unit;
-    // const unsigned int GB = 1024 * 1024 * 1024;
-    const unsigned int GB = 1024 * 1024;
+    const unsigned int GB = 1000 * 1000;
     const double used = (double)(si.totalram-si.freeram-(si.bufferram + si.sharedram))/GB; 
     const unsigned long free = (si.freeram * si.mem_unit)/GB; 
 
@@ -141,17 +142,27 @@ char * get_mem_usage()
 		si.sharedram /= GB;
 		si.bufferram /= GB;
 
-    /* printf("Total Ram: %lluk\tFree: %lluk\n",
-                si.totalram *(unsigned long long)si.mem_unit / GB,
-                si.freeram *(unsigned long long)si.mem_unit/ GB); */
-	sprintf(buf, "%6s%13llu%13llu%13llu%13llu%13llu\n", "Mem:",
-		si.totalram,
-		si.totalram - si.freeram,
-		si.freeram,
-		si.sharedram, si.bufferram
-	);
+    free_pct = ((double) si.freeram / si.totalram) * 100;
 
-    // sprintf(buf, "^c%s^Mem free: %llu GB", CLR_RED, free);
+    if((int) free_pct < 20) {
+      clr = malloc(strlen(CLR_RED) + 1);
+      strcpy(clr, CLR_RED);
+    } else {
+      clr = malloc(strlen(CLR_BLUE) + 1);
+      strcpy(clr, CLR_BLUE);
+    }
+
+    snprintf(buf, 
+             MSIZE, 
+             "%s ^c%s^ %.f%% (%luG)^c%s^ %s %luG", 
+             "MemF:",
+             clr,
+             free_pct,
+             si.freeram,
+             CLR_YELLOW,
+             "MemT:",
+             si.totalram
+             );
   } else {
     buf = "";
   }
@@ -205,7 +216,7 @@ char * get_disk_usage(const char *path)
   const double used = total - available;
   const double usedPct = (double)(used / total) * (double)100;
 
-  sprintf(buf, "%.0fGB / %.0fGB (%.0f%%)", used, available, usedPct);
+  sprintf(buf, "%.0fG / %.0fG (%.0f%%)", used, available, usedPct);
 
   return buf;
 }
