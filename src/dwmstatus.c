@@ -8,6 +8,8 @@
  * 
  * Compile with:
  * gcc -Wall -pedantic -std=c99 -lX11 -lasound dwmstatus.c
+ *
+ * version: 1.0
  * 
  **/
 
@@ -28,6 +30,7 @@ void setup_mouse();
 void run();
 void update_mouse();
 void update_status();
+void spawn_htop();
 void set_status(Display *display, Window window, char *str);
 char* get_mem_usage();
 char* get_date_time();
@@ -244,7 +247,7 @@ void setup()
     exit(EXIT_FAILURE);
   }
 
-  // setup_mouse();
+  setup_mouse();
 
   previousTime = time(0);
 
@@ -258,7 +261,7 @@ void setup()
 void run() 
 {
   while(running) {
-    // update_mouse();
+    update_mouse();
     update_status();
   }
 }
@@ -292,7 +295,10 @@ void update_mouse()
                         &win_x, 
                         &win_y,
                         &mask);
-          printf("Button pressed %d, mouse x: %d, y: %d\n", xev->detail, root_x, root_y);
+          // printf("Button pressed %d, mouse x: %d, y: %d\n", xev->detail, root_x, root_y);
+          if (root_x >= 2960 && root_x <= 3630 && root_y >= 0 && root_y <= 20) {
+            spawn_htop();
+          }
           break;
       }
       XFreeEventData(display, cookie);
@@ -324,6 +330,15 @@ void update_status()
 
     set_status(display, window, status);
     previousTime += interval_status;
+  }
+}
+
+void spawn_htop()
+{
+  char *cmd = "kitty -e htop";    
+  FILE *fp;
+  if ((fp = popen(cmd, "r")) == NULL) {
+    printf("Error opening pipe!\n");
   }
 }
 
