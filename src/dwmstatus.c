@@ -13,6 +13,7 @@
  * 
  **/
 
+#define _DEFAULT_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -111,14 +112,12 @@ char * get_mem_usage()
   char *buf;
   struct sysinfo si; 
   int error = sysinfo(&si);
-  double used_pct, free_pct;
+  double free_pct;
   char *clr;
   buf = (char*) malloc(sizeof(char)*256);
   if(error == 0) {
     unsigned int mem_unit;
     const unsigned int GB = 1000 * 1000;
-    const double used = (double)(si.totalram-si.freeram-(si.bufferram + si.sharedram))/GB; 
-    const unsigned long free = (si.freeram * si.mem_unit)/GB; 
 
     mem_unit = 1;
 	if (si.mem_unit != 0) {
@@ -253,7 +252,7 @@ void setup()
 
   status = (char*) malloc(sizeof(char)*MSIZE);
   if(!status)
-    return EXIT_FAILURE;
+    exit(EXIT_FAILURE);
 
   running = 1;
 }
@@ -274,7 +273,6 @@ void update_mouse()
       cookie->extension != xi_opcode ||
       !XGetEventData(display, cookie)) {
     } else {
-      XIRawEvent          *re;
       Window              root_ret, child_ret;
       int                 root_x, root_y;
       int                 win_x, win_y;
@@ -285,7 +283,6 @@ void update_mouse()
 
       switch (cookie->evtype) {
         case XI_RawButtonPress:
-          re = (XIRawEvent *) cookie->data;
           XQueryPointer(display, 
                         DefaultRootWindow(display),
                         &root_ret, 
@@ -295,7 +292,6 @@ void update_mouse()
                         &win_x, 
                         &win_y,
                         &mask);
-          // printf("Button pressed %d, mouse x: %d, y: %d\n", xev->detail, root_x, root_y);
           if (root_x >= 2960 && root_x <= 3630 && root_y >= 0 && root_y <= 20) {
             spawn_htop();
           }
@@ -315,7 +311,7 @@ void update_status()
     disk_home_free = get_disk_usage("/home");
     disk_sys_free = get_disk_usage("/"); 
 
-    int ret = snprintf(
+    snprintf(
         status, 
         MSIZE, 
         "^b%s^^c%s^%s |  %s  %s | ^c%s^%s", 
