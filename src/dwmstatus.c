@@ -112,7 +112,7 @@ char * get_mem_usage()
   char *buf;
   struct sysinfo si; 
   int error = sysinfo(&si);
-  double free_pct;
+  double free_pct, used_pct;
   char *clr;
   buf = (char*) malloc(sizeof(char)*256);
   if(error == 0) {
@@ -145,25 +145,23 @@ char * get_mem_usage()
 		si.bufferram /= GB;
 
     free_pct = ((double) si.freeram / si.totalram) * 100;
+    used_pct = 100 - free_pct;
 
-    if((int) free_pct < 20) {
+    if((int) used_pct > 75) {
       clr = malloc(strlen(CLR_RED) + 1);
       strcpy(clr, CLR_RED);
     } else {
       clr = malloc(strlen(CLR_BLUE) + 1);
-      strcpy(clr, CLR_BLUE);
+      strcpy(clr, CLR_YELLOW);
     }
 
     snprintf(buf, 
              MSIZE, 
-             "%s ^c%s^ %.f%% (%luG)^c%s^ %s %luG", 
-             "MemF:",
+             "^c%s^ %s %.f%%^c%s^", 
              clr,
-             free_pct,
-             si.freeram,
-             CLR_YELLOW,
-             "MemT:",
-             si.totalram
+             "MEM:",
+             used_pct,
+             CLR_YELLOW
              );
   } else {
     buf = "";
