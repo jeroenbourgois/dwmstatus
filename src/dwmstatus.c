@@ -109,64 +109,62 @@ void set_status(Display *display, Window window, char *str)
 // unsigned long
 char * get_mem_usage()
 {
-  char *buf;
   struct sysinfo si; 
   int error = sysinfo(&si);
   double free_pct, used_pct;
   char *clr;
+  if(error == 0) return "";
+
+  char *buf;
   buf = (char*) malloc(sizeof(char)*256);
-  if(error == 0) {
-    unsigned int mem_unit;
-    const unsigned int GB = 1000 * 1000;
 
-    mem_unit = 1;
-	if (si.mem_unit != 0) {
-		mem_unit = si.mem_unit;
-	}
+  unsigned int mem_unit;
+  const unsigned int GB = 1000 * 1000;
 
-	/* Convert values to kbytes */
-	if (mem_unit == 1) {
-		si.totalram >>= 10;
-		si.freeram >>= 10;
-		si.sharedram >>= 10;
-		si.bufferram >>= 10;
-	} else {
-		mem_unit >>= 10;
-		/* TODO:  Make all this stuff not overflow when mem >= 4 Tb */
-		si.totalram *= mem_unit;
-		si.freeram *= mem_unit;
-		si.sharedram *= mem_unit;
-		si.bufferram *= mem_unit;
-	}
-
-		si.totalram /= GB;
-		si.freeram /= GB;
-		si.sharedram /= GB;
-		si.bufferram /= GB;
-
-    free_pct = ((double) si.freeram / si.totalram) * 100;
-    used_pct = 100 - free_pct;
-
-    if((int) used_pct > 75) {
-      clr = malloc(strlen(CLR_RED) + 1);
-      strcpy(clr, CLR_RED);
-    } else {
-      clr = malloc(strlen(CLR_BLUE) + 1);
-      strcpy(clr, CLR_YELLOW);
-    }
-
-    snprintf(buf, 
-             MSIZE, 
-             "^c%s^ %s %.f%%^c%s^", 
-             clr,
-             "MEM:",
-             used_pct,
-             CLR_YELLOW
-             );
-  } else {
-    buf = "";
+  mem_unit = 1;
+  if (si.mem_unit != 0) {
+    mem_unit = si.mem_unit;
   }
 
+  /* Convert values to kbytes */
+  if (mem_unit == 1) {
+    si.totalram >>= 10;
+    si.freeram >>= 10;
+    si.sharedram >>= 10;
+    si.bufferram >>= 10;
+  } else {
+    mem_unit >>= 10;
+    /* TODO:  Make all this stuff not overflow when mem >= 4 Tb */
+    si.totalram *= mem_unit;
+    si.freeram *= mem_unit;
+    si.sharedram *= mem_unit;
+    si.bufferram *= mem_unit;
+  }
+
+  si.totalram /= GB;
+  si.freeram /= GB;
+  si.sharedram /= GB;
+  si.bufferram /= GB;
+
+  free_pct = ((double) si.freeram / si.totalram) * 100;
+  used_pct = 100 - free_pct;
+
+  if((int) used_pct > 75) {
+    clr = malloc(strlen(CLR_RED) + 1);
+    strcpy(clr, CLR_RED);
+  } else {
+    clr = malloc(strlen(CLR_BLUE) + 1);
+    strcpy(clr, CLR_YELLOW);
+  }
+
+  snprintf(buf, 
+           MSIZE, 
+           "^c%s^ %s %.f%%^c%s^", 
+           clr,
+           "MEM:",
+           used_pct,
+           CLR_YELLOW
+           );
   return buf;
 }
 
@@ -181,16 +179,16 @@ char * get_date_time()
   result = time(NULL);
   resulttm = localtime(&result);
   if(resulttm == NULL)
-    {
-      fprintf(stderr, "Error getting localtime.\n");
-      exit(1);
-    }
+  {
+    fprintf(stderr, "Error getting localtime.\n");
+    exit(1);
+  }
 
   if(!strftime(buf, sizeof(char)*65-1, "%a %b %d %H:%M:%S", resulttm))
-    {
-      fprintf(stderr, "strftime is 0.\n");
-      exit(1);
-    }
+  {
+    fprintf(stderr, "strftime is 0.\n");
+    exit(1);
+  }
 
   return buf;
 }
