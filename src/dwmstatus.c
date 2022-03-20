@@ -203,7 +203,7 @@ char * get_disk_usage(const char *path)
     return NULL;
   } 
 
-  if((buf = (char*) malloc(sizeof(char)*64)) == NULL) {
+  if((buf = (char*) malloc(sizeof(char)*32)) == NULL) {
     fprintf(stderr, "Cannot allocate memory for buf.\n");
     exit(EXIT_FAILURE);
   }
@@ -214,7 +214,7 @@ char * get_disk_usage(const char *path)
   const double used = total - available;
   const double usedPct = (double)(used / total) * (double)100;
 
-  sprintf(buf, "%.0fG / %.0fG (%.0f%%)", used, available, usedPct);
+  sprintf(buf, "%.0f%%", usedPct);
 
   return buf;
 }
@@ -310,7 +310,7 @@ void update_status()
     snprintf(
         status, 
         MSIZE, 
-        "^b%s^^c%s^%s |  %s  %s | ^c%s^%s", 
+        "^b%s^^c%s^%s | HDD ROOT: %s HOME: %s | ^c%s^%s", 
         BG_COLOR,
         CLR_YELLOW,
         mem_usage,
