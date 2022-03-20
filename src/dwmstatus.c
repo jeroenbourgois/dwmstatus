@@ -45,11 +45,12 @@ XEvent ev;
 XIEvent *xi_event;
 XIRawEvent *xev;
 int running = 0;
-const int MSIZE = 1024;
+const int MSIZE = 2048;
 char *status;
 const char *BG_COLOR    = "#000000";
 const char *CLR_BLUE    = "#46d9ff";
 const char *CLR_YELLOW  = "#ecbe7b";
+const char *CLR_WHITE   = "#ffffff";
 const char *CLR_RED     = "#ff3024";
 char *disk_home_free;
 char *disk_sys_free;
@@ -113,7 +114,7 @@ char * get_mem_usage()
   int error = sysinfo(&si);
   double free_pct, used_pct;
   char *clr;
-  if(error == 0) return "";
+  if(error != 0) return "MEM_ERR";
 
   char *buf;
   buf = (char*) malloc(sizeof(char)*256);
@@ -154,7 +155,7 @@ char * get_mem_usage()
     strcpy(clr, CLR_RED);
   } else {
     clr = malloc(strlen(CLR_BLUE) + 1);
-    strcpy(clr, CLR_YELLOW);
+    strcpy(clr, CLR_WHITE);
   }
 
   snprintf(buf, 
@@ -163,7 +164,7 @@ char * get_mem_usage()
            clr,
            "MEM:",
            used_pct,
-           CLR_YELLOW
+           CLR_WHITE
            );
   return buf;
 }
@@ -310,13 +311,13 @@ void update_status()
     snprintf(
         status, 
         MSIZE, 
-        "^b%s^^c%s^%s | HDD ROOT: %s HOME: %s | ^c%s^%s", 
+        "^b%s^^c%s^%s | HDD R: %s H: %s | ^c%s^%s", 
         BG_COLOR,
-        CLR_YELLOW,
+        CLR_WHITE,
         mem_usage,
         disk_sys_free,
         disk_home_free,
-        CLR_BLUE,
+        CLR_WHITE,
         datetime
       );
 
