@@ -45,7 +45,7 @@ XEvent ev;
 XIEvent *xi_event;
 XIRawEvent *xev;
 int running = 0;
-const int MSIZE = 2048;
+const int STATUS_BUFF_SIZE = 512;
 char *status;
 const char *BG_COLOR    = "#000000";
 const char *CLR_BLUE    = "#46d9ff";
@@ -111,6 +111,7 @@ void set_status(Display *display, Window window, char *str)
 char * get_mem_usage()
 {
   struct sysinfo si; 
+  const int BUFF_SIZE = 64;
   int error = sysinfo(&si);
   double free_pct, used_pct;
   char *clr;
@@ -159,7 +160,7 @@ char * get_mem_usage()
   }
 
   snprintf(buf, 
-           MSIZE, 
+           BUFF_SIZE + 1, 
            "^c%s^ %s %.f%%^c%s^", 
            clr,
            "MEM:",
@@ -174,8 +175,9 @@ char * get_date_time()
   char *buf;
   time_t result;
   struct tm *resulttm;
+  const int BUFF_SIZE = 65;
 
-  buf = (char*) malloc(sizeof(char)*65);
+  buf = (char*) malloc(sizeof(char) * BUFF_SIZE);
 
   result = time(NULL);
   resulttm = localtime(&result);
@@ -185,7 +187,7 @@ char * get_date_time()
     exit(1);
   }
 
-  if(!strftime(buf, sizeof(char)*65-1, "%a %b %d %H:%M:%S", resulttm))
+  if(!strftime(buf, sizeof(char) * BUFF_SIZE - 1, "%a %b %d %H:%M:%S", resulttm))
   {
     fprintf(stderr, "strftime is 0.\n");
     exit(1);
@@ -197,6 +199,7 @@ char * get_date_time()
 char * get_disk_usage(const char *path)
 {
   char *buf;
+  const int BUFF_SIZE = 32;
   struct statvfs fs;
 
   if (statvfs(path, &fs) < 0) {
@@ -204,7 +207,7 @@ char * get_disk_usage(const char *path)
     return NULL;
   } 
 
-  if((buf = (char*) malloc(sizeof(char)*32)) == NULL) {
+  if((buf = (char*) malloc(sizeof(char) * BUFF_SIZE)) == NULL) {
     fprintf(stderr, "Cannot allocate memory for buf.\n");
     exit(EXIT_FAILURE);
   }
@@ -215,7 +218,7 @@ char * get_disk_usage(const char *path)
   const double used = total - available;
   const double usedPct = (double)(used / total) * (double)100;
 
-  sprintf(buf, "%.0f%%", usedPct);
+  snprintf(buf, BUFF_SIZE + 1, "%.0f%%", usedPct);
 
   return buf;
 }
@@ -247,7 +250,7 @@ void setup()
 
   previousTime = time(0);
 
-  status = (char*) malloc(sizeof(char)*MSIZE);
+  status = (char*) malloc(sizeof(char)* STATUS_BUFF_SIZE);
   if(!status)
     exit(EXIT_FAILURE);
 
@@ -308,9 +311,9 @@ void update_status()
     disk_home_free = get_disk_usage("/home");
     disk_sys_free = get_disk_usage("/"); 
 
-    snprintf(
+    /* snprintf(
         status, 
-        MSIZE, 
+        STATUS_BUFF_SIZE + 1, 
         "^b%s^^c%s^%s | HDD R: %s H: %s | ^c%s^%s", 
         BG_COLOR,
         CLR_WHITE,
@@ -319,7 +322,9 @@ void update_status()
         disk_home_free,
         CLR_WHITE,
         datetime
-      );
+      ); */
+    snprintf(status, STATUS_BUFF_SIZE + 1, 
+             "| ^c%s^%s", CLR_WHITE, datetime);
 
     set_status(display, window, status);
     previousTime += interval_status;
