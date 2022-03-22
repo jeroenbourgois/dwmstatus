@@ -311,20 +311,11 @@ void update_status()
     disk_home_free = get_disk_usage("/home");
     disk_sys_free = get_disk_usage("/"); 
 
-    /* snprintf(
-        status, 
-        STATUS_BUFF_SIZE + 1, 
+    snprintf(
+        status, STATUS_BUFF_SIZE + 1, 
         "^b%s^^c%s^%s | HDD R: %s H: %s | ^c%s^%s", 
-        BG_COLOR,
-        CLR_WHITE,
-        mem_usage,
-        disk_sys_free,
-        disk_home_free,
-        CLR_WHITE,
-        datetime
-      ); */
-    snprintf(status, STATUS_BUFF_SIZE + 1, 
-             "| ^c%s^%s", CLR_WHITE, datetime);
+        BG_COLOR, CLR_WHITE, mem_usage, disk_sys_free, disk_home_free, CLR_WHITE, datetime
+      );
 
     set_status(display, window, status);
     previousTime += interval_status;
