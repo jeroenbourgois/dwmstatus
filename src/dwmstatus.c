@@ -22,14 +22,14 @@
 #include <time.h>
 #include <fcntl.h>
 #include <X11/Xlib.h>
-#include <X11/extensions/XInput2.h>
+// #include <X11/extensions/XInput2.h>
 
-static void select_events(Display *display, Window win);
-static int has_xi2(Display *display);
+// static void select_events(Display *display, Window win);
+// static int has_xi2(Display *display);
 void setup();
-void setup_mouse();
+// void setup_mouse();
 void run();
-void update_mouse();
+// void update_mouse();
 void update_status();
 void spawn_htop();
 void set_status(Display *display, Window window, char *str);
@@ -41,9 +41,9 @@ char* get_disk_usage(const char *path);
 Display *display;
 Window window;
 int xi_opcode, event, error;
-XEvent ev;
+/* XEvent ev;
 XIEvent *xi_event;
-XIRawEvent *xev;
+XIRawEvent *xev; */
 int running = 0;
 const int STATUS_BUFF_SIZE = 512;
 char *status;
@@ -61,12 +61,12 @@ time_t interval_status = 1;
 time_t currentTime;
 
 /* Return 1 if XI2 is available, 0 otherwise */
-static int has_xi2(Display *display)
+/* static int has_xi2(Display *display)
 {
   int major, minor;
   int rc;
 
-  /* We support XI 2.2 */
+  // We support XI 2.2 
   major = 2;
   minor = 2;
 
@@ -81,16 +81,16 @@ static int has_xi2(Display *display)
   printf("XI2 supported. Server provides version %d.%d.\n", major, minor);
 
   return 1;
-}
+} */
 
-static void select_events(Display *display, Window win)
+/* static void select_events(Display *display, Window win)
 {
   XIEventMask evmasks[1];
   unsigned char xie2mask[(XI_LASTEVENT + 7)/8];
 
   memset(xie2mask, 0, sizeof(xie2mask));
 
-  /* select for button and key events from all master devices */
+  // select for button and key events from all master devices
   XISetMask(xie2mask, XI_RawButtonPress);
 
   evmasks[0].deviceid = XIAllMasterDevices;
@@ -99,7 +99,7 @@ static void select_events(Display *display, Window win)
 
   XISelectEvents(display, win, evmasks, 1);
   XFlush(display);
-}
+} */
 
 void set_status(Display *display, Window window, char *str) 
 {
@@ -223,7 +223,7 @@ char * get_disk_usage(const char *path)
   return buf;
 }
 
-void setup_mouse()
+/* void setup_mouse()
 {
   if (!XQueryExtension(display, "XInputExtension", &xi_opcode, &event, &error)) {
     fprintf(stderr, "X Input extension not available.\n");
@@ -234,7 +234,7 @@ void setup_mouse()
 
   // select for XI2 events
   select_events(display, DefaultRootWindow(display));
-}
+} */
 
 void setup() 
 {
@@ -246,7 +246,7 @@ void setup()
     exit(EXIT_FAILURE);
   }
 
-  setup_mouse();
+  // setup_mouse();
 
   previousTime = time(0);
 
@@ -260,12 +260,12 @@ void setup()
 void run() 
 {
   while(running) {
-    update_mouse();
+    // update_mouse();
     update_status();
   }
 }
 
-void update_mouse()
+/* void update_mouse()
 {
   XGenericEventCookie *cookie = &ev.xcookie;
   if (XCheckTypedEvent(display, GenericEvent ,&ev)){
@@ -300,7 +300,7 @@ void update_mouse()
       XFreeEventData(display, cookie);
     }
   }
-}
+} */
 
 void update_status()
 {
@@ -322,14 +322,14 @@ void update_status()
   }
 }
 
-void spawn_htop()
+/* void spawn_htop()
 {
   char *cmd = "kitty -e htop";    
   FILE *fp;
   if ((fp = popen(cmd, "r")) == NULL) {
     printf("Error opening pipe!\n");
   }
-}
+} */
 
 int main(int argc, char **argv)
 {
@@ -337,8 +337,8 @@ int main(int argc, char **argv)
   run();
   XCloseDisplay(display);
   free(display);
-  free(xi_event);
-  free(xev);
+  // free(xi_event);
+  // free(xev);
   free(status);
   free(disk_home_free);
   free(disk_sys_free);

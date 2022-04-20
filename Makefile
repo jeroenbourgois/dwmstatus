@@ -36,7 +36,3 @@ mrproper:
 
 clean:
 	rm -rf *.o
-
-
-
-
