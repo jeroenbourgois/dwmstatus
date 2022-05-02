@@ -15,6 +15,7 @@
 
 #define _DEFAULT_SOURCE
 #include <stdio.h>
+#include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/statvfs.h>
@@ -57,8 +58,9 @@ char *disk_sys_free;
 char *datetime;
 char *mem_usage;
 time_t previousTime;
-time_t interval_status = 1;
+time_t interval_status  = 1;
 time_t currentTime;
+const float NAP_TIME    = 0.2; // 0.2 seconds
 
 /* Return 1 if XI2 is available, 0 otherwise */
 /* static int has_xi2(Display *display)
@@ -262,6 +264,7 @@ void run()
   while(running) {
     // update_mouse();
     update_status();
+    sleep(NAP_TIME);
   }
 }
 
