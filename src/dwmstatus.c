@@ -221,7 +221,7 @@ char * get_battery()
       s = '-';
     if (strcmp(status,"Full") == 0)
       s = '=';
-    return smprintf("%c%ld%% |", s,(lnum1/(lnum2/100)));
+    return smprintf("BAT: %c%ld%% |", s,(lnum1/(lnum2/100)));
   }
   else return smprintf("");
 }
