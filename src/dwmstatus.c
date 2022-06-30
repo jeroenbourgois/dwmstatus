@@ -14,37 +14,36 @@
  **/
 
 #define _DEFAULT_SOURCE
+#define BATT_NOW        "/sys/class/power_supply/BAT0/energy_now"
+#define BATT_FULL       "/sys/class/power_supply/BAT0/energy_full"
+#define BATT_STATUS       "/sys/class/power_supply/BAT0/status"
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdarg.h>
 #include <sys/statvfs.h>
 #include <sys/sysinfo.h>
 #include <time.h>
 #include <fcntl.h>
 #include <X11/Xlib.h>
-// #include <X11/extensions/XInput2.h>
+#include <errno.h>
 
-// static void select_events(Display *display, Window win);
-// static int has_xi2(Display *display);
 void setup();
-// void setup_mouse();
 void run();
-// void update_mouse();
 void update_status();
 void spawn_htop();
 void set_status(Display *display, Window window, char *str);
 char* get_mem_usage();
 char* get_date_time();
 char* get_disk_usage(const char *path);
+char* smprintf(char *fmt, ...);
+char* getbattery();
 
 /* variables */
 Display *display;
 Window window;
 int xi_opcode, event, error;
-/* XEvent ev;
-XIEvent *xi_event;
-XIRawEvent *xev; */
 int running = 0;
 const int STATUS_BUFF_SIZE = 512;
 char *status;
@@ -57,51 +56,11 @@ char *disk_home_free;
 char *disk_sys_free;
 char *datetime;
 char *mem_usage;
+char *battery;
 time_t previousTime;
 time_t interval_status  = 1;
 time_t currentTime;
 const float NAP_TIME    = 0.2; // 0.2 seconds
-
-/* Return 1 if XI2 is available, 0 otherwise */
-/* static int has_xi2(Display *display)
-{
-  int major, minor;
-  int rc;
-
-  // We support XI 2.2 
-  major = 2;
-  minor = 2;
-
-  rc = XIQueryVersion(display, &major, &minor);
-  if (rc == BadRequest) {
-    printf("No XI2 support. Server supports version %d.%d only.\n", major, minor);
-    return 0;
-  } else if (rc != Success) {
-    fprintf(stderr, "Internal Error! This is a bug in Xlib.\n");
-  }
-
-  printf("XI2 supported. Server provides version %d.%d.\n", major, minor);
-
-  return 1;
-} */
-
-/* static void select_events(Display *display, Window win)
-{
-  XIEventMask evmasks[1];
-  unsigned char xie2mask[(XI_LASTEVENT + 7)/8];
-
-  memset(xie2mask, 0, sizeof(xie2mask));
-
-  // select for button and key events from all master devices
-  XISetMask(xie2mask, XI_RawButtonPress);
-
-  evmasks[0].deviceid = XIAllMasterDevices;
-  evmasks[0].mask_len = sizeof(xie2mask);
-  evmasks[0].mask = xie2mask;
-
-  XISelectEvents(display, win, evmasks, 1);
-  XFlush(display);
-} */
 
 void set_status(Display *display, Window window, char *str) 
 {
@@ -225,18 +184,47 @@ char * get_disk_usage(const char *path)
   return buf;
 }
 
-/* void setup_mouse()
+char * smprintf(char *fmt, ...)
 {
-  if (!XQueryExtension(display, "XInputExtension", &xi_opcode, &event, &error)) {
-    fprintf(stderr, "X Input extension not available.\n");
-    exit(EXIT_FAILURE);
+	va_list fmtargs;
+	// char *buf = NULL;
+  char *buf = malloc(sizeof(char)*100);
+
+	va_start(fmtargs, fmt);
+	if (vsprintf(buf, fmt, fmtargs) == -1){
+		fprintf(stderr, "malloc vasprintf\n");
+		exit(1);
+    }
+	va_end(fmtargs);
+
+	return buf;
+}
+
+char * get_battery()
+{
+  long lnum1, lnum2 = 0;
+  char *status = malloc(sizeof(char)*12);
+  char s = '?';
+  FILE *fp = NULL;
+  if ((fp = fopen(BATT_NOW, "r"))) {
+    fscanf(fp, "%ld\n", &lnum1);
+    fclose(fp);
+    fp = fopen(BATT_FULL, "r");
+    fscanf(fp, "%ld\n", &lnum2);
+    fclose(fp);
+    fp = fopen(BATT_STATUS, "r");
+    fscanf(fp, "%s\n", status);
+    fclose(fp);
+    if (strcmp(status,"Charging") == 0)
+      s = '+';
+    if (strcmp(status,"Discharging") == 0)
+      s = '-';
+    if (strcmp(status,"Full") == 0)
+      s = '=';
+    return smprintf("%c%ld%% |", s,(lnum1/(lnum2/100)));
   }
-
-  if (!has_xi2(display)) exit(EXIT_FAILURE);
-
-  // select for XI2 events
-  select_events(display, DefaultRootWindow(display));
-} */
+  else return smprintf("");
+}
 
 void setup() 
 {
@@ -268,43 +256,6 @@ void run()
   }
 }
 
-/* void update_mouse()
-{
-  XGenericEventCookie *cookie = &ev.xcookie;
-  if (XCheckTypedEvent(display, GenericEvent ,&ev)){
-    if (cookie->type != GenericEvent ||
-      cookie->extension != xi_opcode ||
-      !XGetEventData(display, cookie)) {
-    } else {
-      Window              root_ret, child_ret;
-      int                 root_x, root_y;
-      int                 win_x, win_y;
-      unsigned int        mask;
-
-      xi_event = (XIEvent *) cookie->data;
-      xev = (XIRawEvent *) xi_event;
-
-      switch (cookie->evtype) {
-        case XI_RawButtonPress:
-          XQueryPointer(display, 
-                        DefaultRootWindow(display),
-                        &root_ret, 
-                        &child_ret, 
-                        &root_x, 
-                        &root_y, 
-                        &win_x, 
-                        &win_y,
-                        &mask);
-          if (root_x >= 2960 && root_x <= 3630 && root_y >= 0 && root_y <= 20) {
-            spawn_htop();
-          }
-          break;
-      }
-      XFreeEventData(display, cookie);
-    }
-  }
-} */
-
 void update_status()
 {
   if((time(&currentTime) - previousTime) >= interval_status)
@@ -313,11 +264,12 @@ void update_status()
     datetime = get_date_time();
     disk_home_free = get_disk_usage("/home");
     disk_sys_free = get_disk_usage("/"); 
+    battery = get_battery();
 
     snprintf(
         status, STATUS_BUFF_SIZE + 1, 
-        "^b%s^^c%s^%s | HDD R: %s H: %s | ^c%s^%s", 
-        BG_COLOR, CLR_WHITE, mem_usage, disk_sys_free, disk_home_free, CLR_WHITE, datetime
+        "^b%s^^c%s^%s %s | HDD R: %s H: %s | ^c%s^%s", 
+        BG_COLOR, CLR_WHITE, battery, mem_usage, disk_sys_free, disk_home_free, CLR_WHITE, datetime
       );
 
     set_status(display, window, status);
@@ -325,23 +277,12 @@ void update_status()
   }
 }
 
-/* void spawn_htop()
-{
-  char *cmd = "kitty -e htop";    
-  FILE *fp;
-  if ((fp = popen(cmd, "r")) == NULL) {
-    printf("Error opening pipe!\n");
-  }
-} */
-
 int main(int argc, char **argv)
 {
   setup();
   run();
   XCloseDisplay(display);
   free(display);
-  // free(xi_event);
-  // free(xev);
   free(status);
   free(disk_home_free);
   free(disk_sys_free);
