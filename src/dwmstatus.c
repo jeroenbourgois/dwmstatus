@@ -9,7 +9,7 @@
  * Compile with:
  * gcc -Wall -pedantic -std=c99 -lX11 -lasound dwmstatus.c
  *
- * version: 1.0
+ * version: 1.5
  * 
  **/
 
@@ -17,6 +17,7 @@
 #define BATT_NOW        "/sys/class/power_supply/BAT0/energy_now"
 #define BATT_FULL       "/sys/class/power_supply/BAT0/energy_full"
 #define BATT_STATUS     "/sys/class/power_supply/BAT0/status"
+#define MEM_FILE        "/proc/meminfo"
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -34,6 +35,9 @@ void run();
 void update_status();
 void spawn_htop();
 void set_status(Display *display, Window window, char *str);
+// double get_memory_usage();
+double get_mem_percentage();
+double get_mem_total();
 char* get_mem_usage();
 char* get_date_time();
 char* get_disk_usage(const char *path);
@@ -52,6 +56,7 @@ const char *CLR_BLUE    = "#46d9ff";
 const char *CLR_YELLOW  = "#ecbe7b";
 const char *CLR_WHITE   = "#ffffff";
 const char *CLR_RED     = "#ff3024";
+const char *CLR_GREEN   = "#00ffa4";
 char *disk_home_free;
 char *disk_sys_free;
 char *datetime;
@@ -68,64 +73,75 @@ void set_status(Display *display, Window window, char *str)
   XSync(display, False);
 }
 
+/* double get_mem_usage(){
+    FILE* file;
+    unsigned long long memtotal, memfree, memavailable, buffers, cached;
+
+    file = fopen(MEM_FILE, "r");
+    fscanf(file, "MemTotal: %llu kB MemFree: %llu kB MemAvailable: %llu kB Buffers: %llu kB Cached: %llu kB",
+           &memtotal, &memfree, &memavailable, &buffers, &cached);
+    fclose(file);
+
+    double result = (memtotal - (memfree + buffers + cached));
+
+    return result;
+} */
+
+double get_mem_total(){
+    FILE* file;
+    unsigned long long memtotal;
+    file = fopen(MEM_FILE, "r");
+    fscanf(file, "MemTotal: %llu kB",&memtotal);
+    fclose(file);
+    return memtotal;
+}
+
+double get_mem_percentage(){
+    FILE* file;
+    double percentage;
+    int memory_used;
+    //int memory_free;
+    unsigned long long memtotal, memfree, memavailable, buffers, cached;
+
+    file = fopen(MEM_FILE, "r");
+    fscanf(file, "MemTotal: %llu kB MemFree: %llu kB MemAvailable: %llu kB Buffers: %llu kB Cached: %llu kB",
+           &memtotal, &memfree, &memavailable, &buffers, &cached);
+    fclose(file);
+
+    memory_used = memtotal - memfree - cached - buffers;
+    //memory_free = memtotal - memory_used;
+
+    percentage = memory_used * 100 / memtotal;
+
+    return percentage;
+}
+
 // unsigned long
 char * get_mem_usage()
 {
-  struct sysinfo si; 
-  const int BUFF_SIZE = 64;
-  int error = sysinfo(&si);
-  double free_pct, used_pct;
+  const int BUF_SIZE = 64;
+  double pct;
   char *clr;
-  if(error != 0) return "MEM_ERR";
 
   char *buf;
   buf = (char*) malloc(sizeof(char)*256);
 
-  unsigned int mem_unit;
-  const unsigned int GB = 1000 * 1000;
+  pct = get_mem_percentage();
 
-  mem_unit = 1;
-  if (si.mem_unit != 0) {
-    mem_unit = si.mem_unit;
-  }
-
-  /* Convert values to kbytes */
-  if (mem_unit == 1) {
-    si.totalram >>= 10;
-    si.freeram >>= 10;
-    si.sharedram >>= 10;
-    si.bufferram >>= 10;
-  } else {
-    mem_unit >>= 10;
-    /* TODO:  Make all this stuff not overflow when mem >= 4 Tb */
-    si.totalram *= mem_unit;
-    si.freeram *= mem_unit;
-    si.sharedram *= mem_unit;
-    si.bufferram *= mem_unit;
-  }
-
-  si.totalram /= GB;
-  si.freeram /= GB;
-  si.sharedram /= GB;
-  si.bufferram /= GB;
-
-  free_pct = ((double) si.freeram / si.totalram) * 100;
-  used_pct = 100 - free_pct;
-
-  if((int) used_pct > 75) {
+  if((int) pct > 75) {
     clr = malloc(strlen(CLR_RED) + 1);
     strcpy(clr, CLR_RED);
   } else {
     clr = malloc(strlen(CLR_BLUE) + 1);
-    strcpy(clr, CLR_WHITE);
+    strcpy(clr, CLR_GREEN);
   }
 
   snprintf(buf, 
-           BUFF_SIZE + 1, 
+           BUF_SIZE + 1, 
            "^c%s^ %s %.f%%^c%s^", 
            clr,
            "MEM:",
-           used_pct,
+           pct,
            CLR_WHITE
            );
   return buf;
