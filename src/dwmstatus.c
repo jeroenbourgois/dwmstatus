@@ -16,7 +16,7 @@
 #define _DEFAULT_SOURCE
 #define BATT_NOW        "/sys/class/power_supply/BAT0/energy_now"
 #define BATT_FULL       "/sys/class/power_supply/BAT0/energy_full"
-#define BATT_STATUS       "/sys/class/power_supply/BAT0/status"
+#define BATT_STATUS     "/sys/class/power_supply/BAT0/status"
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
