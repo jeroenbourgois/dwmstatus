@@ -17,6 +17,7 @@
 #define BATT_NOW        "/sys/class/power_supply/BAT0/energy_now"
 #define BATT_FULL       "/sys/class/power_supply/BAT0/energy_full"
 #define BATT_STATUS     "/sys/class/power_supply/BAT0/status"
+#define CPU_MODE        "/sys/firmware/acpi/platform_profile"
 #define MEM_FILE        "/proc/meminfo"
 #include <stdio.h>
 #include <unistd.h>
@@ -42,7 +43,8 @@ char* get_mem_usage();
 char* get_date_time();
 char* get_disk_usage(const char *path);
 char* smprintf(char *fmt, ...);
-char* getbattery();
+char* get_battery();
+char* get_perf_mode();
 
 /* variables */
 Display *display;
@@ -62,6 +64,7 @@ char *disk_sys_free;
 char *datetime;
 char *mem_usage;
 char *battery;
+char *perf_mode;
 time_t previousTime;
 time_t interval_status  = 1;
 time_t currentTime;
@@ -138,7 +141,7 @@ char * get_mem_usage()
 
   snprintf(buf, 
            BUF_SIZE + 1, 
-           "^c%s^ %s %.f%%^c%s^", 
+           "^c%s^%s %.f%%^c%s^", 
            clr,
            "MEM:",
            pct,
@@ -242,6 +245,23 @@ char * get_battery()
   else return smprintf("");
 }
 
+char * get_perf_mode()
+{
+  char *mode = malloc(sizeof(char)*20);
+  char s = 'L';
+  FILE *fp = NULL;
+  if ((fp = fopen(CPU_MODE, "r"))) {
+    fscanf(fp, "%s\n", mode);
+    fclose(fp);
+    if (strcmp(mode,"performance") == 0)
+      s = 'P';
+    if (strcmp(mode,"balanced") == 0)
+      s = 'B';
+    return smprintf("CPU: %c |", s);
+  }
+  else return smprintf("");
+}
+
 void setup() 
 {
   display = XOpenDisplay(NULL);
@@ -281,11 +301,12 @@ void update_status()
     disk_home_free = get_disk_usage("/home");
     disk_sys_free = get_disk_usage("/"); 
     battery = get_battery();
+    perf_mode = get_perf_mode();
 
     snprintf(
         status, STATUS_BUFF_SIZE + 1, 
-        "^b%s^^c%s^%s %s | HDD R: %s H: %s | ^c%s^%s", 
-        BG_COLOR, CLR_WHITE, battery, mem_usage, disk_sys_free, disk_home_free, CLR_WHITE, datetime
+        "^b%s^^c%s^%s %s %s | HDD R: %s H: %s | ^c%s^%s", 
+        BG_COLOR, CLR_WHITE, battery, perf_mode, mem_usage, disk_sys_free, disk_home_free, CLR_WHITE, datetime
       );
 
     set_status(display, window, status);
